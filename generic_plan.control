@@ -1,0 +1,4 @@
+comment = 'generate a generic plan for a parameterized SQL statement'
+default_version = 1.0
+superuser = false
+relocatable = true
