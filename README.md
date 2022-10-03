@@ -60,6 +60,11 @@ resolved by PostgreSQL.  This can mean that PostgreSQL chooses a different
 function or operator (see [the documentation on type conversions][typeconv]).  
 In the worst case, type resolution ambiguity can lead to errors.
 
+`generic_plan` ignores string constants in the statement when searching for
+parameters, but it does not consider dollar quoting or SQL comments.  If you
+have something like `$42` in a comment or a dollar quoted string constant,
+that will make the function fail.
+
  [typeconv]: https://www.postgresql.org/docs/current/typeconv.html
 
 Support
