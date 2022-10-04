@@ -1,4 +1,7 @@
-CREATE FUNCTION generic_plan(query text) RETURNS table (plan text)
+CREATE FUNCTION generic_plan(
+   query text,
+   verbose boolean DEFAULT FALSE
+) RETURNS table (plan text)
    LANGUAGE plpgsql
    VOLATILE
    RETURNS NULL ON NULL INPUT
@@ -43,7 +46,7 @@ BEGIN
 
    /* construct a prepared statement */
    EXECUTE
-      concat(
+      pg_catalog.concat(
          'PREPARE _stmt_',
          open_paren,
          pg_catalog.rtrim(
@@ -57,8 +60,10 @@ BEGIN
 
    /* get the generic plan */
    RETURN QUERY EXECUTE
-      concat(
-         'EXPLAIN EXECUTE _stmt_',
+      pg_catalog.concat(
+         'EXPLAIN ',
+         CASE WHEN generic_plan.verbose THEN '(VERBOSE) ' ELSE '' END,
+         'EXECUTE _stmt_',
          open_paren,
          pg_catalog.rtrim(
             pg_catalog.repeat('NULL,', arg_count),

@@ -52,6 +52,10 @@ should be called like this:
 
     SELECT plan FROM generic_plan('SELECT ...');
 
+To get `EXPLAIN (VERBOSE)` output, call
+
+    SELECT plan FROM generic_plan('SELECT ...', verbose => TRUE);
+
 Limitations
 -----------
 
