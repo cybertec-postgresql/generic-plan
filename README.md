@@ -56,6 +56,11 @@ To get `EXPLAIN (VERBOSE)` output, call
 
     SELECT plan FROM generic_plan('SELECT ...', verbose => TRUE);
 
+Similarly, cou can supply `costs => FALSE` or `settings => TRUE` to set the
+corresponding `EXPLAIN` options.  If you want an output format different
+from the default `TEXT`, specify `format => 'YAML'` or one of the other
+formats supported by `EXPLAIN`.
+
 Limitations
 -----------
 

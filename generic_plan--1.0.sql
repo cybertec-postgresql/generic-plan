@@ -1,6 +1,9 @@
 CREATE FUNCTION generic_plan(
    query text,
-   verbose boolean DEFAULT FALSE
+   verbose boolean DEFAULT FALSE,
+   costs boolean DEFAULT TRUE,
+   settings boolean DEFAULT FALSE,
+   format text DEFAULT 'TEXT'
 ) RETURNS table (plan text)
    LANGUAGE plpgsql
    VOLATILE
@@ -14,12 +17,22 @@ $$DECLARE
    arg_count integer;
    open_paren text;
    close_paren text;
+   explain_cmd text;
+   json_result json;
+   xml_result xml;
+   yaml_result text;
 BEGIN
+   /* check the "format" argument */
+   IF NOT pg_catalog.upper(generic_plan.format) IN ('TEXT', 'XML', 'JSON', 'YAML') THEN
+      RAISE EXCEPTION 'incorrect EXPLAIN format %', generic.plan_format
+         USING HINT = 'Supported formats are: TEXT, XML, JSON, YAML';
+   END IF;
+
    /* reject statements containing a semicolon in the middle */
    IF pg_catalog.strpos(
          pg_catalog.rtrim(generic_plan.query, ';'),
          ';'
-      ) > 0 THEN
+      ) OPERATOR(pg_catalog.>) 0 THEN
       RAISE EXCEPTION 'query string must not contain a semicolon';
    END IF;
 
@@ -58,12 +71,15 @@ BEGIN
          generic_plan.query
       );
 
-   /* get the generic plan */
-   RETURN QUERY EXECUTE
+   /* construct an EXPLAIN statement */
+   explain_cmd :=
       pg_catalog.concat(
-         'EXPLAIN ',
-         CASE WHEN generic_plan.verbose THEN '(VERBOSE) ' ELSE '' END,
-         'EXECUTE _stmt_',
+         'EXPLAIN (FORMAT ',
+         generic_plan.format,
+         CASE WHEN generic_plan.verbose THEN ', VERBOSE' ELSE '' END,
+         CASE WHEN generic_plan.costs THEN '' ELSE ', COSTS OFF' END,
+         CASE WHEN generic_plan.settings THEN ', SETTINGS' ELSE '' END,
+         ') EXECUTE _stmt_',
          open_paren,
          pg_catalog.rtrim(
             pg_catalog.repeat('NULL,', arg_count),
@@ -71,6 +87,27 @@ BEGIN
          ),
          close_paren
       );
+
+   /* get and return the plan */
+   CASE pg_catalog.upper(generic_plan.format)
+      WHEN 'JSON' THEN
+         EXECUTE explain_cmd INTO json_result;
+
+         RETURN QUERY
+            SELECT * FROM pg_catalog.regexp_split_to_table(json_result::text, E'\n');
+      WHEN 'XML' THEN
+         EXECUTE explain_cmd INTO xml_result;
+
+         RETURN QUERY
+            SELECT * FROM pg_catalog.regexp_split_to_table(xml_result::text, E'\n');
+      WHEN 'YAML' THEN
+         EXECUTE explain_cmd INTO yaml_result;
+
+         RETURN QUERY
+            SELECT * FROM pg_catalog.regexp_split_to_table(yaml_result, E'\n');
+      ELSE
+         RETURN QUERY EXECUTE explain_cmd;
+   END CASE;
 
    /* delete the prepared statement */
    DEALLOCATE _stmt_;
