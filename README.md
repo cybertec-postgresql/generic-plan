@@ -81,7 +81,8 @@ Support
 
 You can open a [Github issue][issue].
 
-For commercial support, please contact [CYBERTEC][cybertec].
+For commercial support, please contact
+[CYBERTEC PostgreSQL International GmbH][cybertec].
 
  [issue]: https://github.com/cybertec-postgresql/generic-plan/issues
  [cybertec]: https://www.cybertec-postgresql.com
